@@ -266,7 +266,7 @@ double K1;
 
  int   I, J, N;
   double XI[21];
-  double SUM = 0.0, U1 = 0.0, G1 = 0.0, Q1 = 0.0, E1 = 0.0;
+  double SUM = 0.0, U1 = 0.0, G1 = 0.0, Q1 = 0.0,F1g=0.0, E1 = 0.0;
   double XIJ, EIJ0, GIJ0, BN;
     double X1 = 0.000001, X2 = 40.0;
   double X3, Ft, F1, F2, F3,P,T,D,Z,BMIX;
@@ -312,7 +312,7 @@ double K1;
     U1 += XI[I]*pow(EI[I],2.5);                                                     // B.6
     G1 += XI[I]*GI[I];                                                              // B.7
     Q1 += XI[I]*QI[I];                                                              // B.8
-    F1 += XI[I]*XI[I] * FI[I];                                                      // B.9
+    F1g += XI[I]*XI[I] * FI[I];                                                      // B.9
     E1 += XI[I]*EI[I];}
 
   K1 *= K1;                                                                         // B.11
@@ -348,7 +348,7 @@ double K1;
   for (N=12; N<58; N++){
    CNS[N] = pow(G1+1.0-G[N],(double)G[N])*                                           // B.5
             pow(Q1*Q1+1.0-Q[N],(double)Q[N])*
-            pow(F1+1.0-F[N],(double)F[N])*A[N]*pow(U1,U[N]);}
+            pow(F1g+1.0-F[N],(double)F[N])*A[N]*pow(U1,U[N]);}
 
 
 //*************************************************************************************///***************
@@ -359,9 +359,7 @@ double K1;
      
  
   D = 0.0;
-  F1 -= P;
-  F2 -= P;
-  
+ 
   /* PZOFDT(&X1, T, &F1, Z, BMIX);//void PZOFDT(double *D, double *T, double *P, double *Z, double *BMIX) */
 
 
@@ -383,13 +381,17 @@ double K1;
   BMIX = 0.0;
   for (N=0; N<18; N++) BMIX += BI[N]/pow(T,U[N]);                                  // B.1
   Z = 1.0 + BMIX * X2;                                                             // (1) B.10
-  for (N=12; N<18; N++) Z -= DR*CNS[N]/pow(T,U[N]);                                // (1) B.10
+  for (N=12; N<18; N++) {Z -= DR*CNS[N]/pow(T,U[N]);  }                              // (1) B.10
   for (N=12; N<58; N++)
-    Z += CNS[N]/pow(T,U[N])*(B[N]-C[N]*K[N]*pow(DR,(double)K[N]))*
-          pow(DR,(double)B[N])*exp(-C[N]*pow(DR,(double)K[N]));
+   {
+	Z += CNS[N]/pow(T,U[N])*(B[N]-C[N]*K[N]*pow(DR,(double)K[N]))*
+          pow(DR,(double)B[N])*exp(-C[N]*pow(DR,(double)K[N]));}
   F2 = X2 * RGAS * T * Z;
   
-  if (F1*F2>=0) goto END;  //>>>>>>>>>>>> need modifing >> this line return the pointers with their values if it is true >>> think of goto statement to skip the following iteration code
+  F1 -= P;
+  F2 -= P;
+  
+  if (F1*F2<0) goto END;  //>>>>>>>>>>>> need modifing >> this line return the pointers with their values if it is true >>> think of goto statement to skip the following iteration code
   
 //>>>>>>>>>>>>>>>>>>>>>>>>>>important you will need to change every counter varibale<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 //------------------
@@ -398,7 +400,7 @@ double K1;
   for (I=1; I<=50; I++)
 // Use False Position to get point 3.*/
    {X3 = X1-F1*(X2-X1)/(F2-F1);
-   F3 -= P;
+  
     /*PZOFDT(&X3, T, &F3, Z, BMIX);*/
     DR = X3*K1*K1*K1;                                                                  // (2)
   BMIX = 0.0;
@@ -409,9 +411,9 @@ double K1;
     Z += CNS[N]/pow(T,U[N])*(B[N]-C[N]*K[N]*pow(DR,(double)K[N]))*
           pow(DR,(double)B[N])*exp(-C[N]*pow(DR,(double)K[N]));
   F3 = X3 * RGAS * T * Z;
-    
+
+ F3 -= P;
 // Use points 1, 2, and 3 to estimate the root using Chamber's method (quadratic solution).
- Ft -= P;
     D = X1*F2*F3/((F1-F2)*(F1-F3))+X2*F1*F3/((F2-F1)*(F2-F3))+X3*F1*F2/((F3-F1)*(F3-F2));
     if ((D-X1)*(D-X2)>=0) D=(X1+X2)/2;
  /*   PZOFDT(D, T, &F, Z, BMIX);*///void PZOFDT(double *D, double *T, double *P, double *Z, double *BMIX) */
@@ -424,7 +426,8 @@ double K1;
     Z += CNS[N]/pow(T,U[N])*(B[N]-C[N]*K[N]*pow(DR,(double)K[N]))*
           pow(DR,(double)B[N])*exp(-C[N]*pow(DR,(double)K[N]));
   Ft = D * RGAS * T * Z;
-   
+  Ft -= P;
+ 
     if (fabs(Ft)<=TOL) goto END;  // is return means go out of func with current values so it can be replace with goto ??
 // Discard quadratic solution if false position root is closer.
     if (fabs(F3) < fabs(Ft) && Ft*F3 > 0)
@@ -437,7 +440,6 @@ double K1;
                     else {X2=D; F2=Ft;}}}
   D = 0.0;
   END:
-  	
      printf("%9.5f",Z);
    printf("\n");
  

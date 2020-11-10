@@ -391,7 +391,7 @@ double K1;
   F1 -= P;
   F2 -= P;
   
-  if (F1*F2<0) goto END;  //>>>>>>>>>>>> need modifing >> this line return the pointers with their values if it is true >>> think of goto statement to skip the following iteration code
+  if (F1*F2>=0) goto END;  //>>>>>>>>>>>> need modifing >> this line return the pointers with their values if it is true >>> think of goto statement to skip the following iteration code
   
 //>>>>>>>>>>>>>>>>>>>>>>>>>>important you will need to change every counter varibale<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 //------------------
